@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -10,7 +11,6 @@ jobs:
       - name: Get code
         uses: actions/checkout@v4
       - name: Cache dependencies
-        id: cache
         uses: actions/cache@v4
         with:
           path: ~/.npm
@@ -19,13 +19,13 @@ jobs:
         run: npm ci
       - name: Lint code
         run: npm run lint
+
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Get code
         uses: actions/checkout@v4
       - name: Cache dependencies
-        id: cache
         uses: actions/cache@v4
         with:
           path: ~/.npm
@@ -33,6 +33,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Test code
+        id: run-tests
         run: npm run test
       - name: Upload test report
         if: failure() && steps.run-tests.outcome == 'failure'
@@ -40,26 +41,14 @@ jobs:
         with:
           name: test-report
           path: test.json
-  report:
-    runs-on: ubuntu-latest
-    if: failure()
-    needs:
-      - lint
-      - deploy
-    steps:
-      - name: Output information
-        run: |
-          echo "Oups ! Un problème est survenu dans le workflow."
-          echo "Déclenché par : ${{ github.actor }}"
-          echo "Workflow ID : ${{ github.run_id }}"
+
   build:
-    needs: test
+    needs: [lint, test]
     runs-on: ubuntu-latest
     steps:
       - name: Get code
         uses: actions/checkout@v4
       - name: Cache dependencies
-        id: cache
         uses: actions/cache@v4
         with:
           path: ~/.npm
@@ -67,13 +56,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build website
-        id: build-website
         run: npm run build
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dist-files
           path: dist
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -83,6 +72,18 @@ jobs:
         with:
           name: dist-files
       - name: Output contents
-        run: ls
+        run: ls -la
       - name: Deploy
         run: echo "Deploying..."
+
+  report:
+    runs-on: ubuntu-latest
+    if: failure()
+    needs: [lint, test, build, deploy]
+    steps:
+      - name: Output information
+        run: |
+          echo "Oups ! Un problème est survenu dans le workflow."
+          echo "Déclenché par : ${{ github.actor }}"
+          echo "Workflow ID : ${{ github.run_id }}"
+          echo "Commit SHA : ${{ github.sha }}"
