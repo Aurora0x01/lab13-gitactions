@@ -1,0 +1,19 @@
+name: Using Reusable Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get code
+        uses: actions/checkout@v4
+      - name: Lint code
+        run: echo "Linting complete"
+
+  deploy:
+    needs: lint
+    uses: ./.github/workflows/reusable.yml
