@@ -40,6 +40,18 @@ jobs:
         with:
           name: test-report
           path: test.json
+  report:
+    runs-on: ubuntu-latest
+    if: failure()
+    needs:
+      - lint
+      - deploy
+    steps:
+      - name: Output information
+        run: |
+          echo "Oups ! Un problème est survenu dans le workflow."
+          echo "Déclenché par : ${{ github.actor }}"
+          echo "Workflow ID : ${{ github.run_id }}"
   build:
     needs: test
     runs-on: ubuntu-latest
